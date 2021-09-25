@@ -29,7 +29,6 @@ module.exports.updateDebris = async (req, res, next) => {
 		return res
 			.status(204)
 			.json(createResponse(debris, 'Data updated successfully!', false));
-		
 	} catch (err) {
 		next(err);
 	}
@@ -66,8 +65,17 @@ module.exports.getDebrisById = async (req, res, next) => {
 module.exports.getDebris = async (req, res, next) => {
 	try {
 		const query = req.query;
-		const debris = await Debris.find(query);
-		return res.json(createResponse(debris));
+
+		const page = query.page || 1;
+		delete query.page;
+		const perPage = query.perPage || 12;
+		delete query.perPage;
+		const total = await Debris.countDocuments(query);
+		const debris = await Debris.find(query)
+			.sort({ created_at: -1 })
+			.skip(Number(perPage) * (page - 1))
+			.limit(Number(perPage));
+		return res.json({ data: debris, total });
 	} catch (err) {
 		next(err);
 	}
