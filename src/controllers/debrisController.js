@@ -84,15 +84,23 @@ module.exports.getDebris = async (req, res, next) => {
 module.exports.detectionStatistics = async (req, res, next) => {
 	try {
 		const total = await Debris.countDocuments();
-
+		const days = req.query.days || 7;
+		console.log(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * days));
 		const data = await Debris.aggregate([
+			{
+				$match: {
+					created_at: {
+						$gt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * days),
+					},
+				},
+			},
 			{
 				$project: {
 					total: 1,
 					day: { $dayOfMonth: { date: '$created_at', timezone: 'Asia/Dhaka' } },
 					month: { $month: { date: '$created_at', timezone: 'Asia/Dhaka' } },
 					year: { $year: { date: '$created_at', timezone: 'Asia/Dhaka' } },
-					created_at: 1
+					created_at: 1,
 				},
 			},
 
@@ -107,7 +115,6 @@ module.exports.detectionStatistics = async (req, res, next) => {
 					count: { $sum: 1 },
 				},
 			},
-			{ $sort: { '_id.create_at': -1 } },
 		]);
 
 		return res.json({ data, total });
